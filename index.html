@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shivaji University - Experience Certificate Generator</title>
+    <style>
+        :root { --primary-navy: #002147; --border-color: #ccc; }
+        body { font-family: 'Times New Roman', serif; margin: 0; padding: 20px; background-color: #f0f2f5; }
+        
+        /* Form Styling */
+        .form-container { max-width: 950px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .form-section { border-bottom: 2px solid #ddd; margin-bottom: 25px; padding-bottom: 20px; }
+        h2 { color: var(--primary-navy); border-left: 5px solid var(--primary-navy); padding-left: 10px; margin-bottom: 20px; }
+        
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #444; }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; }
+        
+        .row-inputs { display: grid; grid-template-columns: 2.5fr 1.5fr 1.5fr 50px; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .other-input { margin-top: 5px; border-color: #007bff; }
+        
+        button { cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.3s; }
+        .add-btn { background: #28a745; color: white; border: none; padding: 8px 15px; margin-bottom: 10px; }
+        .generate-btn { background: var(--primary-navy); color: white; border: none; padding: 15px; width: 100%; font-size: 1.1rem; }
+        .remove-btn { background: #dc3545; color: white; border: none; height: 38px; }
+
+        /* Print Template */
+        #certificate-print { display: none; width: 210mm; background: white; padding: 15mm; margin: auto; }
+        .letterhead img { width: 100%; border: 1.5px solid #000; }
+        .cert-title { text-align: center; font-weight: bold; font-size: 1.5rem; text-decoration: underline; margin: 25px 0; }
+        .cert-body { line-height: 1.8; text-align: justify; font-size: 12pt; }
+        .cert-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .cert-table th, .cert-table td { border: 1px solid black; padding: 10px; text-align: center; }
+        .footer-section { margin-top: 40px; display: flex; justify-content: space-between; }
+
+        @media print {
+            .form-container, .add-btn, .remove-btn { display: none !important; }
+            #certificate-print { display: block !important; padding: 0; }
+            body { background: white; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h1 style="text-align:center; color: var(--primary-navy); margin-bottom: 30px;">Experience Certificate Portal</h1>
+    
+    <div class="form-section">
+        <h2>1. Present Working Details</h2>
+        <div class="input-group">
+            <label>Full Name of Applicant</label>
+            <input type="text" id="teacherName" placeholder="Enter full name as per records">
+        </div>
+        <div class="input-group">
+            <label>Department</label>
+            <select id="currentDept"></select>
+        </div>
+        <div class="input-group">
+            <label>Permanent Designation</label>
+            <div id="permDesignationWrapper">
+                <select id="permDesignation" onchange="handleDesignationChange(this)"></select>
+            </div>
+        </div>
+
+        <label>Experience History</label>
+        <div id="experienceRows">
+            <div class="row-inputs">
+                <div class="designation-wrapper">
+                    <select class="expPost" onchange="handleDesignationChange(this)"></select>
+                </div>
+                <input type="date" class="fromDate" onchange="validateDates(this)">
+                <input type="date" class="toDate" onchange="validateDates(this)">
+                <span></span>
+            </div>
+        </div>
+        <button type="button" class="add-btn" onclick="addRow()">+ Add Experience Row</button>
+    </div>
+
+    <div class="form-section">
+        <h2>2. Details of Application (Other Post)</h2>
+        <div class="row-inputs" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="input-group">
+                <label>Designation Applying For</label>
+                <input type="text" id="applyPost">
+            </div>
+            <div class="input-group">
+                <label>Applying Dept/Institute</label>
+                <input type="text" id="applyInst">
+            </div>
+            <div class="input-group">
+                <label>Date of Request Letter</label>
+                <input type="date" id="requestDate">
+            </div>
+        </div>
+        <div class="input-group" style="width: 30%;">
+            <label>Ref Number Suffix (SU/EST-PG/___)</label>
+            <input type="text" id="refNo" placeholder="e.g. 2024/456">
+        </div>
+    </div>
+
+    <button onclick="generateCertificate()" class="generate-btn">Generate Experience Certificate</button>
+</div>
+
+<div id="certificate-print">
+    <div class="letterhead">
+        <img src="exp.png" alt="Shivaji University Letterhead">
+    </div>
+
+    <div class="cert-title">EXPERIENCE CERTIFICATE</div>
+
+    <div class="cert-body">
+        This is to certify that <b><span id="pTeacherName"></span></b> is working as a <b><span id="pPermDesignation"></span></b> in the 
+        <b><span id="pCurrentDept"></span></b> of this University. The details of his appointments are as under:
+        
+        <table class="cert-table">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Sr. No.</th>
+                    <th style="width: 50%;">Post</th>
+                    <th style="width: 20%;">From</th>
+                    <th style="width: 20%;">Up to</th>
+                </tr>
+            </thead>
+            <tbody id="pTableBody"></tbody>
+        </table>
+
+        This certificate is issued to him to apply for the post of <u><span id="pApplyPost"></span></u> in 
+        <b><span id="pApplyInst"></span></b> as per his request letter dated <b><span id="pRequestDate"></span></b>.
+    </div>
+
+    <div class="footer-section">
+        <div>
+            <b>Ref. No. :-</b> SU/EST-PG/<span id="pRefNo"></span><br>
+            <b>Date :-</b> <span id="pFooterDate"></span>
+        </div>
+        <div style="text-align: center;">
+            <br><br>
+            <b>REGISTRAR</b><br>
+            Shivaji University, Kolhapur.
+        </div>
+    </div>
+</div>
+
+<script>
+    const departments = [
+        "Department of Agrochemicals And Pest Management", "Department of Bio-Chemistry", "Department of Biotechnology", 
+        "Department of Botany", "Department of Chemistry", "Department of Industrial Chemistry", 
+        "Department of Commerce and Management", "Department of Commerce and Management - M.B.A.",
+        "Department of Computer Science", "Department of Economics:Autonomous", "Department of Education",
+        "Department of Electronics", "Department of English", "Department of Environment Science",
+        "Department of Food Science & Technology", "Department of Foreign Languages", "Department of Geography",
+        "Department of Hindi", "Department of History", "Department of Journalism & Communication",
+        "Department of Law", "Department of Library & Information Science", "Department of Lifelong Learning and Extension",
+        "Department of Marathi", "Department of Mathematics", "Department of Mass Communication",
+        "Department of Microbiology", "Department of Music and Dramatics", "Department of Physics",
+        "Department of Political Science", "Department of Psychology", "Department of Sociology",
+        "Department of Sports", "Department of Statistics", "Department of Technology", "Department of Zoology",
+        "School of Nanoscience and Technology", "Yashwantrao Chavan School of Rural Development",
+        "UGC CENTER FOR COACHING FOR COMPETITIVE EXAMINATIONS"
+    ];
+
+    const designations = [
+        "Assistant Director/Assistant Professor", "Deputy Director/Associate Professor", 
+        "Director/Professor", "Assistant Professor", "Associate Professor", 
+        "Professor", "Director", "Temporary Lecturer", "Other"
+    ];
+
+    window.onload = () => {
+        const deptSelect = document.getElementById('currentDept');
+        departments.sort().forEach(d => deptSelect.add(new Option(d, d)));
+        
+        const permDesSelect = document.getElementById('permDesignation');
+        populateDesignations(permDesSelect);
+
+        const firstRowSelect = document.querySelector('.expPost');
+        populateDesignations(firstRowSelect);
+    };
+
+    function populateDesignations(selectElement) {
+        designations.forEach(d => selectElement.add(new Option(d, d)));
+    }
+
+    function handleDesignationChange(select) {
+        if (select.value === "Other") {
+            const input = document.createElement('input');
+            input.type = "text";
+            input.className = select.id === "permDesignation" ? "other-input" : "expPost other-input";
+            input.placeholder = "Enter Designation Manually";
+            select.parentElement.appendChild(input);
+            select.style.display = "none";
+            input.focus();
+        }
+    }
+
+    function validateDates(input) {
+        const row = input.parentElement;
+        const from = row.querySelector('.fromDate').value;
+        const to = row.querySelector('.toDate').value;
+        
+        if (from && to && new Date(from) > new Date(to)) {
+            alert("Error: 'To Date' cannot be earlier than 'From Date'");
+            input.value = "";
+        }
+    }
+
+    function addRow() {
+        const container = document.getElementById('experienceRows');
+        const div = document.createElement('div');
+        div.className = 'row-inputs';
+        
+        // Build the Designation select first
+        const wrapper = document.createElement('div');
+        wrapper.className = 'designation-wrapper';
+        const select = document.createElement('select');
+        select.className = 'expPost';
+        select.onchange = function() { handleDesignationChange(this); };
+        populateDesignations(select);
+        wrapper.appendChild(select);
+
+        // Add the rest of the inputs
+        div.appendChild(wrapper);
+        const restOfInputs = `
+            <input type="date" class="fromDate" onchange="validateDates(this)">
+            <input type="date" class="toDate" onchange="validateDates(this)">
+            <button class="remove-btn" onclick="this.parentElement.remove()">X</button>
+        `;
+        div.insertAdjacentHTML('beforeend', restOfInputs);
+        container.appendChild(div);
+    }
+
+    function generateCertificate() {
+        if (!document.getElementById('teacherName').value) return alert("Please enter Teacher Name");
+
+        document.getElementById('pTeacherName').innerText = document.getElementById('teacherName').value;
+        
+        const permSelect = document.getElementById('permDesignation');
+        const permOtherInput = document.querySelector('#permDesignationWrapper .other-input');
+        document.getElementById('pPermDesignation').innerText = permOtherInput ? permOtherInput.value : permSelect.value;
+
+        document.getElementById('pCurrentDept').innerText = document.getElementById('currentDept').value;
+        document.getElementById('pApplyPost').innerText = document.getElementById('applyPost').value;
+        document.getElementById('pApplyInst').innerText = document.getElementById('applyInst').value;
+        document.getElementById('pRefNo').innerText = document.getElementById('refNo').value;
+        
+        const reqDate = document.getElementById('requestDate').value;
+        document.getElementById('pRequestDate').innerText = reqDate ? new Date(reqDate).toLocaleDateString('en-GB') : "____";
+        
+        const today = new Date().toLocaleDateString('en-GB');
+        document.getElementById('pFooterDate').innerText = today;
+
+        const tbody = document.getElementById('pTableBody');
+        tbody.innerHTML = '';
+        
+        const rows = document.querySelectorAll('#experienceRows .row-inputs');
+        rows.forEach((row, index) => {
+            let postVal = "";
+            const select = row.querySelector('select.expPost');
+            const textInput = row.querySelector('input.other-input');
+            
+            if (textInput) postVal = textInput.value;
+            else if (select) postVal = select.value;
+
+            const from = row.querySelector('.fromDate').value;
+            const to = row.querySelector('.toDate').value;
+
+            let tr = `<tr>
+                <td>${index + 1}</td>
+                <td style="text-align:left">${postVal}</td>
+                <td>${from ? new Date(from).toLocaleDateString('en-GB') : '---'}</td>
+                <td>${to ? new Date(to).toLocaleDateString('en-GB') : 'Till Date'}</td>
+            </tr>`;
+            tbody.innerHTML += tr;
+        });
+
+        window.print();
+    }
+</script>
+
+</body>
+</html>
