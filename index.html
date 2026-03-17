@@ -32,7 +32,9 @@
         .cert-body { line-height: 1.8; text-align: justify; font-size: 12pt; }
         .cert-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         .cert-table th, .cert-table td { border: 1px solid black; padding: 10px; text-align: center; }
-        .footer-section { margin-top: 40px; display: flex; justify-content: space-between; }
+        
+        .footer-section { margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .address-block { margin-top: 20px; line-height: 1.4; font-size: 12pt; }
 
         @media print {
             .form-container, .add-btn, .remove-btn { display: none !important; }
@@ -111,7 +113,7 @@
 
     <div class="cert-body">
         This is to certify that <b><span id="pTeacherName"></span></b> is working as a <b><span id="pPermDesignation"></span></b> in the 
-        <b><span id="pCurrentDept"></span></b> of this University. The details of his appointments are as under:
+        <b><span id="pCurrentDept"></span></b> of this University. The details of his appointments are as under – 
         
         <table class="cert-table">
             <thead>
@@ -119,7 +121,7 @@
                     <th style="width: 10%;">Sr. No.</th>
                     <th style="width: 50%;">Post</th>
                     <th style="width: 20%;">From</th>
-                    <th style="width: 20%;">Up to</th>
+                    <th style="width: 20%;">up to</th>
                 </tr>
             </thead>
             <tbody id="pTableBody"></tbody>
@@ -133,6 +135,15 @@
         <div>
             <b>Ref. No. :-</b> SU/EST-PG/<span id="pRefNo"></span><br>
             <b>Date :-</b> <span id="pFooterDate"></span>
+            
+            <div class="address-block">
+                To,<br>
+                <span id="pAddrName"></span>,<br>
+                <span id="pAddrDesig"></span>,<br>
+                Department of <span id="pAddrDept"></span>,<br>
+                Shivaji University,<br>
+                Kolhapur.
+            </div>
         </div>
         <div style="text-align: center;">
             <br><br>
@@ -163,7 +174,7 @@
     const designations = [
         "Assistant Director/Assistant Professor", "Deputy Director/Associate Professor", 
         "Director/Professor", "Assistant Professor", "Associate Professor", 
-        "Professor", "Director", "Temporary Lecturer", "Other"
+        "Professor", "Director", "Temporary Lecturer", "Temporary Assistant Professor", "Other"
     ];
 
     window.onload = () => {
@@ -209,7 +220,6 @@
         const div = document.createElement('div');
         div.className = 'row-inputs';
         
-        // Build the Designation select first
         const wrapper = document.createElement('div');
         wrapper.className = 'designation-wrapper';
         const select = document.createElement('select');
@@ -218,7 +228,6 @@
         populateDesignations(select);
         wrapper.appendChild(select);
 
-        // Add the rest of the inputs
         div.appendChild(wrapper);
         const restOfInputs = `
             <input type="date" class="fromDate" onchange="validateDates(this)">
@@ -230,18 +239,26 @@
     }
 
     function generateCertificate() {
-        if (!document.getElementById('teacherName').value) return alert("Please enter Teacher Name");
+        const teacherName = document.getElementById('teacherName').value;
+        if (!teacherName) return alert("Please enter Teacher Name");
 
-        document.getElementById('pTeacherName').innerText = document.getElementById('teacherName').value;
-        
+        // Set Print Values
+        document.getElementById('pTeacherName').innerText = teacherName;
+        document.getElementById('pAddrName').innerText = teacherName; // For Footer address
+
         const permSelect = document.getElementById('permDesignation');
         const permOtherInput = document.querySelector('#permDesignationWrapper .other-input');
-        document.getElementById('pPermDesignation').innerText = permOtherInput ? permOtherInput.value : permSelect.value;
+        const finalDesignation = permOtherInput ? permOtherInput.value : permSelect.value;
+        document.getElementById('pPermDesignation').innerText = finalDesignation;
+        document.getElementById('pAddrDesig').innerText = finalDesignation; // For Footer address
 
-        document.getElementById('pCurrentDept').innerText = document.getElementById('currentDept').value;
-        document.getElementById('pApplyPost').innerText = document.getElementById('applyPost').value;
-        document.getElementById('pApplyInst').innerText = document.getElementById('applyInst').value;
-        document.getElementById('pRefNo').innerText = document.getElementById('refNo').value;
+        const currentDept = document.getElementById('currentDept').value;
+        document.getElementById('pCurrentDept').innerText = currentDept;
+        document.getElementById('pAddrDept').innerText = currentDept.replace("Department of ", ""); // For Footer address
+
+        document.getElementById('pApplyPost').innerText = document.getElementById('applyPost').value || "________";
+        document.getElementById('pApplyInst').innerText = document.getElementById('applyInst').value || "________";
+        document.getElementById('pRefNo').innerText = document.getElementById('refNo').value || "____";
         
         const reqDate = document.getElementById('requestDate').value;
         document.getElementById('pRequestDate').innerText = reqDate ? new Date(reqDate).toLocaleDateString('en-GB') : "____";
@@ -268,7 +285,7 @@
                 <td>${index + 1}</td>
                 <td style="text-align:left">${postVal}</td>
                 <td>${from ? new Date(from).toLocaleDateString('en-GB') : '---'}</td>
-                <td>${to ? new Date(to).toLocaleDateString('en-GB') : 'Till Date'}</td>
+                <td>${to ? new Date(to).toLocaleDateString('en-GB') : 'till date'}</td>
             </tr>`;
             tbody.innerHTML += tr;
         });
